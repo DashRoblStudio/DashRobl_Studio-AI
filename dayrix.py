@@ -12,9 +12,12 @@ async def ask_openrouter(prompt):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/DashRoblStudio",  # 🔧 ссылка на твой проект
+        "X-Title": "DashRobl_Studio-AI",  # 🔧 любое имя приложения
     }
+
     data = {
-        "model": "gpt-4o-mini",  # можно выбрать другую модель
+        "model": "gpt-4o-mini",
         "messages": [
             {"role": "system", "content": "Ты — Telegram-бот Dayrix, отвечай умно и кратко."},
             {"role": "user", "content": prompt},
