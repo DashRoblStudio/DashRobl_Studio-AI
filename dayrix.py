@@ -1,46 +1,51 @@
-import asyncio
-import aiohttp
-from telegram import Bot
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
+import requests
 
-# --- Вставляем ключи прямо сюда ---
-TELEGRAM_TOKEN = "8469572341:AAF4rd5Ppx0RA79bB7em6o9D0lEdJ4ahSfE"
+# 🔑 Ключи
+TELEGRAM_BOT_TOKEN = "8469572341:AAF4rd5Ppx0RA79bB7em6o9D0lEdJ4ahSfE"
 OPENROUTER_API_KEY = "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"
 
-# --- Функции обработки сообщений ---
-async def start(update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! Я бот DashRobl.")
-
-async def echo(update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(update.message.text)
-
-# --- Запрос к OpenRouter ---
-async def ask_openrouter(prompt: str):
-    url = "https://openrouter.ai/api/v1/completions"
+# ⚙️ Функция общения с OpenRouter
+async def ask_openrouter(prompt):
+    url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/DashRoblStudio",  # 🔧 ссылка на твой проект
+        "X-Title": "DashRobl_Studio-AI",  # 🔧 любое имя приложения
     }
+
     data = {
-        "model": "gpt-4.1-mini",
-        "input": prompt
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "Ты — Telegram-бот Dayrix, отвечай умно и кратко."},
+            {"role": "user", "content": prompt},
+        ],
     }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, headers=headers, json=data) as resp:
-            if resp.status == 200:
-                result = await resp.json()
-                return result.get("output", [{"content": "Нет ответа"}])[0]["content"]
-            else:
-                return f"Ошибка OpenRouter: {resp.status}"
+    try:
+        r = requests.post(url, headers=headers, json=data)
+        if r.status_code == 200:
+            return r.json()["choices"][0]["message"]["content"]
+        else:
+            return f"Ошибка: {r.status_code}\n{r.text}"
+    except Exception as e:
+        return f"Ошибка соединения: {e}"
 
-# --- Основная функция бота ---
-async def main():
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-    await app.run_polling()
+# 💬 Обработчик сообщений
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_text = update.message.text
+    print(f"[{update.effective_user.first_name}] {user_text}")
+    reply = await ask_openrouter(user_text)
+    await update.message.reply_text(reply)
 
-# --- Запуск ---
+# 🚀 Основная функция
+def main():
+    print("✅ DayrixBot запущен...")
+    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.run_polling()
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
