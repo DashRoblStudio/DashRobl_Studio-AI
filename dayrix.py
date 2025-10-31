@@ -8,8 +8,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 
 # -----------------------------
 # Ключи (берутся из переменных окружения Railway)
-OPENROUTER_API_KEY = os.environ.get("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")
-TELEGRAM_TOKEN = os.environ.get("8469572341:AAF4rd5Ppx0RA79bB7em6o9D0lEdJ4ahSfE")
+OPENROUTER_API_KEY = ("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")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 # -----------------------------
 
 # Настройка логирования
