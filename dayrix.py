@@ -1,29 +1,21 @@
-import os
 import asyncio
 import aiohttp
 from telegram import Bot
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# Получаем токен из переменной окружения
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-
-if not TELEGRAM_TOKEN:
-    raise ValueError("TELEGRAM_TOKEN не найден в переменных окружения!")
+# --- Вставляем ключи прямо сюда ---
+TELEGRAM_TOKEN = "8469572341:AAF4rd5Ppx0RA79bB7em6o9D0lEdJ4ahSfE"
+OPENROUTER_API_KEY = "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"
 
 # --- Функции обработки сообщений ---
-
 async def start(update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Привет! Я бот DashRobl.")
 
 async def echo(update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(update.message.text)
 
-# --- Пример асинхронного запроса к OpenRouter ---
+# --- Запрос к OpenRouter ---
 async def ask_openrouter(prompt: str):
-    OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
-    if not OPENROUTER_API_KEY:
-        return "API ключ OpenRouter не найден!"
-    
     url = "https://openrouter.ai/api/v1/completions"
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -45,12 +37,8 @@ async def ask_openrouter(prompt: str):
 # --- Основная функция бота ---
 async def main():
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-
-    # Команды и обработчики
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-
-    # Запуск бота
     await app.run_polling()
 
 # --- Запуск ---
