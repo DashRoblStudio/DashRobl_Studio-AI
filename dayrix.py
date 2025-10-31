@@ -1,51 +1,38 @@
-from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
+# dayrix.py
+import telebot
 import requests
 
-# 🔑 Ключи
-TELEGRAM_BOT_TOKEN = "8469572341:AAF4rd5Ppx0RA79bB7em6o9D0lEdJ4ahSfE"
-OPENROUTER_API_KEY = "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"
+# ====== Токены ======
+TELEGRAM_TOKEN = "8425180233:AAEuJg_EvS8FDK2DmnXxZvrgfhkUYAM_AzE"
+OPENROUTER_KEY = "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"
 
-# ⚙️ Функция общения с OpenRouter
-async def ask_openrouter(prompt):
+bot = telebot.TeleBot(TELEGRAM_TOKEN)
+
+# ====== Функция для OpenRouter ======
+def openrouter_response(message):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/DashRoblStudio",  # 🔧 ссылка на твой проект
-        "X-Title": "DashRobl_Studio-AI",  # 🔧 любое имя приложения
+        "Authorization": f"Bearer {OPENROUTER_KEY}",
+        "Content-Type": "application/json"
     }
-
     data = {
-        "model": "gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": "Ты — Telegram-бот Dayrix, отвечай умно и кратко."},
-            {"role": "user", "content": prompt},
-        ],
+        "model": "gpt-4o-mini",  # или "gpt-3.5-turbo" если будут ошибки
+        "messages": [{"role": "user", "content": message}],
+        "max_tokens": 500
     }
-
     try:
-        r = requests.post(url, headers=headers, json=data)
-        if r.status_code == 200:
-            return r.json()["choices"][0]["message"]["content"]
-        else:
-            return f"Ошибка: {r.status_code}\n{r.text}"
+        response = requests.post(url, json=data, headers=headers)
+        result = response.json()
+        return result["choices"][0]["message"]["content"]
     except Exception as e:
-        return f"Ошибка соединения: {e}"
+        return f"Ошибка: {e}"
 
-# 💬 Обработчик сообщений
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_text = update.message.text
-    print(f"[{update.effective_user.first_name}] {user_text}")
-    reply = await ask_openrouter(user_text)
-    await update.message.reply_text(reply)
+# ====== Обработка сообщений Telegram ======
+@bot.message_handler(func=lambda m: True)
+def handle_message(message):
+    answer = openrouter_response(message.text)
+    bot.reply_to(message, answer)
 
-# 🚀 Основная функция
-def main():
-    print("✅ DayrixBot запущен...")
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+# ====== Запуск бота ======
+print("Dayrix Telegram Bot запущен...")
+bot.infinity_polling()
