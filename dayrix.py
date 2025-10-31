@@ -1,53 +1,55 @@
-import os
+# dayrix.py
+import asyncio
 import aiohttp
+import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# Твой ключ OpenRouter
-OPENROUTER_API_KEY = os.getenv("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")  # можно прописать прямо в Railway Variables
+# -----------------------------
+# Ключи (замени на свои)
+OPENROUTER_API_KEY = "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"
+TELEGRAM_TOKEN = 8469572341:AAF4rd5Ppx0RA79bB7em6o9D0lEdJ4ahSfE"
+# -----------------------------
 
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-
-# Асинхронная функция для запроса к OpenRouter
+# Функция для запроса к OpenRouter API
 async def ask_openrouter(prompt: str) -> str:
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": "openai/gpt-4",  # или любую другую модель из твоего списка
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}"}
+    json_data = {
+        "model": "openrouter-gpt",
+        "messages": [{"role": "user", "content": prompt}]
     }
 
     async with aiohttp.ClientSession() as session:
-        async with session.post(OPENROUTER_URL, json=payload, headers=headers) as resp:
+        async with session.post(url, headers=headers, json=json_data) as resp:
             data = await resp.json()
-            # В зависимости от структуры ответа
             return data["choices"][0]["message"]["content"]
 
-# Обработчик команды /start
+# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! Я готов к работе.")
+    await update.message.reply_text("Привет! Я DashRobl AI. Напиши мне что-нибудь.")
 
-# Обработчик сообщений
+# Обработка текстовых сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
-    # Ждем выполнения корутины ask_openrouter
-    reply = await ask_openrouter(user_text)
-    await update.message.reply_text(reply)
+    await update.message.reply_text("Обрабатываю...")
+    try:
+        reply = await ask_openrouter(user_text)
+        await update.message.reply_text(reply)
+    except Exception as e:
+        await update.message.reply_text(f"Ошибка: {e}")
 
-# Основной запуск бота
+# Основная функция
 async def main():
-    TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")  # Telegram Token в Railway Variables
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-
+    
+    # Добавляем обработчики
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    print("Бот запущен...")
+    
+    # Запуск бота
     await app.run_polling()
 
+# Точка входа
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
